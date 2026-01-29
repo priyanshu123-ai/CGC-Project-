@@ -1,0 +1,38 @@
+export const CHALLENGE_TEMPLATES = [
+  {
+    id: "eco_week",
+    title: "Eco Friendly Week",
+    description: "Reduce plastic & junk food for 7 days",
+    durationDays: 7,
+    reward: 50,
+    icon: "leaf",
+    color: "from-emerald-500 to-teal-600",
+  },
+  {
+    id: "plastic_free",
+    title: "Plastic Free Challenge",
+    description: "Avoid single-use plastic completely",
+    durationDays: 5,
+    reward: 40,
+    icon: "recycle",
+    color: "from-cyan-500 to-blue-600",
+  },
+  {
+    id: "green_transport",
+    title: "Green Transport",
+    description: "Use public transport / cycling",
+    durationDays: 7,
+    reward: 60,
+    icon: "bike",
+    color: "from-green-500 to-emerald-600",
+  },
+  {
+    id: "energy_saver",
+    title: "Energy Saver",
+    description: "Reduce electricity usage",
+    durationDays: 10,
+    reward: 80,
+    icon: "zap",
+    color: "from-yellow-500 to-orange-600",
+  },
+];
