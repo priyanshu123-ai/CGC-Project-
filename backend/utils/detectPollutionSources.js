@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const OVERPASS_URL = "https://overpass.kumi.systems/api/interpreter";
+const OVERPASS_URL = "https://lz4.overpass-api.de/api/interpreter";
 
 export const detectPollutionSources = async (bbox) => {
   // 🛡️ Safety check
