@@ -6,21 +6,22 @@ import Groq from "groq-sdk";
 const sanitizeText = (text) =>
   text
     .split("\n")
-    .map(l => l.trim())
-    .filter(l =>
-      l.length > 4 &&
-      !l.match(
-        /cgst|sgst|gst|total|invoice|bill|cashier|phone|cin|fssai|avenue|dmart/i
-      )
+    .map((l) => l.trim())
+    .filter(
+      (l) =>
+        l.length > 4 &&
+        !l.match(
+          /cgst|sgst|gst|total|invoice|bill|cashier|phone|cin|fssai|avenue|dmart/i,
+        ),
     )
-    .map(l =>
+    .map((l) =>
       l
         .replace(/^\d{3,5}\s+/, "")
         .replace(/\s+\d+(\.\d+)?\s+.*$/, "")
         .replace(/\s{2,}/g, " ")
-        .trim()
+        .trim(),
     )
-    .filter(l => l.length > 3)
+    .filter((l) => l.length > 3)
     .join("\n");
 
 const groq = new Groq({
@@ -78,7 +79,7 @@ ${billText}
 
     try {
       products = JSON.parse(
-        extractRes.choices[0].message.content.replace(/```json|```/g, "")
+        extractRes.choices[0].message.content.replace(/```json|```/g, ""),
       );
     } catch {
       return res.status(500).json({
@@ -97,7 +98,7 @@ ${billText}
     } catch {
       ecoResult = {
         totalPollutionScore: 0,
-        analysis: products.map(p => ({
+        analysis: products.map((p) => ({
           item: p,
           impact: "unknown",
           recyclable: false,
@@ -119,7 +120,6 @@ ${billText}
           : "🌱 Eco-friendly purchase",
       breakdown: ecoResult.analysis,
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({
