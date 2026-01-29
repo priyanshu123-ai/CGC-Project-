@@ -29,16 +29,28 @@ const getAQIColor = (aqi) => {
   return "#991B1B";
 };
 
-const speak = (text) => {
-  if (!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const msg = new SpeechSynthesisUtterance(text);
+const unlockSpeech = () => {
+  if (!("speechSynthesis" in window)) return;
+
+  const msg = new SpeechSynthesisUtterance("Audio enabled");
+  msg.volume = 1; // MUST be audible once
+  msg.rate = 1;
   msg.lang = "en-IN";
-  msg.rate = 0.95;
+
   window.speechSynthesis.speak(msg);
 };
 
 
+const speak = (text) => {
+  if (!("speechSynthesis" in window)) return;
+
+  const msg = new SpeechSynthesisUtterance(text);
+  msg.lang = "en-IN";
+  msg.rate = 0.95;
+  msg.volume = 1;
+
+  window.speechSynthesis.speak(msg);
+};
 
 
 const Routes = () => {
@@ -50,46 +62,54 @@ const Routes = () => {
   const [destinationCoords, setDestinationCoords] = useState(null);
   const [loading, setLoading] = useState(false);
 
-   const lastAlertRef = useRef(null);
+  const lastAlertRef = useRef(null);
   const voiceEnabledRef = useRef(true);
 
+  /* 🔊 POLLUTION ALERT (VOICE + TOAST) */
+
+
   useEffect(() => {
-  if (!routes.length) return;
+    if (!routes.length) return;
 
-  const segments = routes[selectedRoute]?.pollutionSegments;
-  if (!segments || segments.length === 0) return;
+    const segments = routes[selectedRoute]?.pollutionSegments;
+    if (!segments?.length) return;
 
-  const high = segments.find((s) => s.aqi >= 150);
-  if (!high) return;
+    const high = segments.find((s) => s.aqi >= 150);
+    if (!high) return;
 
-  // prevent repeat alerts
-  if (lastAlertRef.current === high.zone) return;
-  lastAlertRef.current = high.zone;
+    const level = high.aqi >= 200 ? "SEVERE" : "HIGH";
+    if (lastAlertRef.current === level) return;
 
-  const message =
-    high.aqi >= 200
-      ? "Severe pollution ahead. Close car windows, turn on air recirculation, and avoid exposure."
-      : "High pollution detected ahead. Please wear a mask and keep vehicle windows closed.";
+    lastAlertRef.current = level;
 
-  toast.warn(message, {
-    position: "top-center",
-    autoClose: 8000,
-    pauseOnHover: true,
-  });
+    const message =
+      level === "SEVERE"
+        ? "Severe pollution ahead. Close windows and enable air recirculation."
+        : "High pollution detected ahead. Please wear a mask.";
 
-  if (voiceEnabledRef.current) {
-    speak(message);
-  }
-}, [routes, selectedRoute]);
+    toast.warn(message, { position: "top-center", autoClose: 8000 });
+
+    if (voiceEnabledRef.current) {
+      speak(message);
+    }
+  }, [routes, selectedRoute]);
 
   const handleSearch = async () => {
+     unlockSpeech(); 
+  if (window.speechSynthesis) {
+  const unlock = new SpeechSynthesisUtterance("Starting route");
+  unlock.volume = 0;
+  window.speechSynthesis.speak(unlock);
+}
+
+
+    lastAlertRef.current = null; // reset alerts on new search
+
     if (!destination) return;
     setLoading(true);
 
     try {
-      /* 1️⃣ Try frontend cache */
       const cached = getCachedRoute(origin, destination);
-
       if (cached) {
         setRoutes(cached.routes || []);
         setSelectedRoute(cached.routes?.[0]?.id || 0);
@@ -98,17 +118,12 @@ const Routes = () => {
         return;
       }
 
-      
-
-      /* 2️⃣ Call backend */
       const res = await axios.post(`${serverUrl}/api/v2/routes`, {
         originCity: origin,
         destinationCity: destination,
       });
 
-      /* 3️⃣ Save to frontend cache */
       setCachedRoute(origin, destination, res.data);
-
       setRoutes(res.data.routes || []);
       setSelectedRoute(res.data.routes?.[0]?.id || 0);
       setOriginCoords(res.data.origin);
@@ -118,13 +133,12 @@ const Routes = () => {
     } finally {
       setLoading(false);
     }
-
   };
 
   window.stopPollutionVoice = () => {
-  window.speechSynthesis.cancel();
-  voiceEnabledRef.current = false;
-};
+    window.speechSynthesis.cancel();
+    voiceEnabledRef.current = false;
+  };
 
 
   return (

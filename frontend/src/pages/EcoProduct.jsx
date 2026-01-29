@@ -1,9 +1,11 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
-import { Leaf, Recycle, ShoppingCart, Sparkles, Star, Filter, ExternalLink, Heart } from "lucide-react";
+import { Label } from "../components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog";
+import { Leaf, Recycle, ShoppingCart, Sparkles, Star, Filter, ExternalLink, Heart, Plus, Trash2 } from "lucide-react";
 
 
 const CATEGORIES = [
@@ -54,8 +56,8 @@ const PRODUCTS = [
     co2SavedKg: 1.2,
     rating: 4.2,
     price: 149,
-    link: "https://www.amazon.in/s?k=bamboo+toothbrush",
-    image: "https://images.unsplash.com/photo-1588662886316-3f8f5b735e83?q=80&w=1200&auto=format&fit=crop",
+    link: "",
+    image: "https://img.freepik.com/premium-photo/eco-friendly-bamboo-toothbrushes-with-natural-background_648871-8075.jpg",
     badges: ["Biodegradable", "Plastic-Free"],
     whyBetter:
       "Compostable handle, reduces plastic waste in landfills.",
@@ -70,14 +72,14 @@ const PRODUCTS = [
     rating: 4.8,
     price: 150,
     link: "https://www.dmrcsmartcard.com/",
-    image: "https://images.unsplash.com/photo-1556761175-b413da4baf72?q=80&w=1200&auto=format&fit=crop",
+    image: "https://th.bing.com/th/id/R.6df07a6bda8595fdc97d9c456dd3f2b7?rik=U3817SUQnioZ2Q&riu=http%3a%2f%2fupload.wikimedia.org%2fwikipedia%2fcommons%2f8%2f83%2fMetro-Paris-Rame-MF77-ligne.jpg&ehk=Jzgixs35xpR9my7uoHcImBO1Y1uoDXz7oOfUndEELT8%3d&risl=&pid=ImgRaw&r=0",
     badges: ["Public Transit", "Low AQI Exposure"],
     whyBetter:
       "Shifts trips from private vehicles to transit, slashes per‑km emissions and exposure.",
   },
   {
     id: "p5",
-    name: "Solar Power Bank (20,000 mAh)",
+    name: "Solar Power Bank",
     brand: "SunVolt",
     category: "Electronics",
     aqiImpact: "Low",
@@ -100,11 +102,95 @@ const PRODUCTS = [
     rating: 4.5,
     price: 6999,
     link: "https://www.amazon.in/s?k=hepa+air+purifier",
-    image: "https://images.unsplash.com/photo-1591278045615-8f41a9de6827?q=80&w=1200&auto=format&fit=crop",
+    image: "https://m.media-amazon.com/images/I/71ipnrfS-1L._AC_SX208_CB1169409_QL70_.jpg",
     badges: ["HEPA 13", "PM2.5 Removal"],
     whyBetter:
       "Reduces indoor PM2.5 exposure during high-AQI days; pair with sealed rooms.",
   },
+  {
+    id: "p7",
+    name: "Reusable Water Bottle",
+    brand: "HydroFlask",
+    category: "Personal Care",
+    aqiImpact: "Low",
+    co2SavedKg: 35,
+    rating: 4.9,
+    price: 899,
+    link: "https://www.amazon.in/s?k=metal+water+bottle",
+    image: "https://images.pexels.com/photos/4000090/pexels-photo-4000090.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1", 
+    badges: ["Plastic-Free", "Durable"],
+    whyBetter: "Replaces hundreds of single-use plastic bottles every year.",
+  },
+  {
+    id: "p8",
+    name: "Solar Garden Lights",
+    brand: "SolarGlow",
+    category: "Home Energy",
+    aqiImpact: "Low",
+    co2SavedKg: 12,
+    rating: 4.3,
+    price: 1299,
+    link: "https://www.amazon.in/s?k=solar+garden+lights",
+    image: "https://images.pexels.com/photos/16632420/pexels-photo-16632420/free-photo-of-solar-lamp-in-garden.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    badges: ["Zero Energy", "Auto-Sensor"],
+    whyBetter: "Lights up your garden using free solar energy, zero electricity cost.",
+  },
+  {
+    id: "p9",
+    name: "Beeswax Food Wraps",
+    brand: "Apiary",
+    category: "Groceries",
+    aqiImpact: "Low",
+    co2SavedKg: 2,
+    rating: 4.5,
+    price: 599,
+    link: "https://www.amazon.in/s?k=beeswax+food+wraps",
+    image: "https://images.pexels.com/photos/8250916/pexels-photo-8250916.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    badges: ["Biodegradable", "Washable"],
+    whyBetter: "Natural alternative to plastic cling wrap, keeps food fresh effectively.",
+  },
+  {
+    id: "p10",
+    name: "Rechargeable Batteries",
+    brand: "PowerLoop",
+    category: "Electronics",
+    aqiImpact: "Medium",
+    co2SavedKg: 5,
+    rating: 4.4,
+    price: 899,
+    link: "https://www.amazon.in/s?k=rechargeable+batteries",
+    image: "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?q=80&w=1200&auto=format&fit=crop",
+    badges: ["Less E-Waste", "Long Life"],
+    whyBetter: "One rechargeable battery replaces up to 1000 single-use alkaline batteries.",
+  },
+  {
+    id: "p11",
+    name: "Compost Bin",
+    brand: "EarthCycle",
+    category: "Home Energy",
+    aqiImpact: "Medium",
+    co2SavedKg: 45,
+    rating: 4.7,
+    price: 1499,
+    link: "https://www.amazon.in/s?k=compost+bin",
+    image: "https://images.pexels.com/photos/6508357/pexels-photo-6508357.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    badges: ["Waste Reduction", "Fertilizer"],
+    whyBetter: "Turns kitchen scraps into nutrient-rich soil, reducing landfill methane emissions.",
+  },
+  {
+    id: "p12",
+    name: "Bamboo Cutlery Set",
+    brand: "EcoTravel",
+    category: "Travel",
+    aqiImpact: "Low",
+    co2SavedKg: 1.5,
+    rating: 4.3,
+    price: 349,
+    link: "https://www.amazon.in/s?k=bamboo+cutlery+set",
+    image: "https://images.pexels.com/photos/4202392/pexels-photo-4202392.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+    badges: ["Lightweight", "Reusable"],
+    whyBetter: "Perfect for travel and office lunches, avoiding disposable plastic cutlery.",
+  }
 ];
 
 const Tag = ({ children }) => (
@@ -126,16 +212,23 @@ const Rating = ({ value }) => {
   );
 };
 
-const ProductCard = ({ p, onAdd }) => {
+const ProductCard = ({ p, onAdd, onDelete }) => {
   return (
-    <Card className="bg-[#0b1411] border border-green-500/20 overflow-hidden hover:border-green-400/40 transition-all duration-300">
+    <Card className="bg-[#0b1411] border border-green-500/20 overflow-hidden hover:border-green-400/40 transition-all duration-300 relative group">
       <div className="relative h-40 w-full overflow-hidden">
-        <img src={p.image} alt={p.name} className="w-full h-full object-cover scale-[1.02]" />
+        <img src={p.image} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
         <div className="absolute top-2 left-2 flex gap-1">
           {p.badges.map((b) => (
             <Tag key={b}>{b}</Tag>
           ))}
         </div>
+        <button 
+          onClick={() => onDelete(p.id)}
+          className="absolute top-2 right-2 p-1.5 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+          title="Delete Product"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
       </div>
       <div className="p-4 space-y-2">
         <div className="flex items-start justify-between gap-2">
@@ -165,13 +258,64 @@ const ProductCard = ({ p, onAdd }) => {
 };
 
 const EcoProducts = () => {
+  const [products, setProducts] = useState(() => {
+    const saved = localStorage.getItem("eco_products_v11");
+    return saved ? JSON.parse(saved) : PRODUCTS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("eco_products_v11", JSON.stringify(products));
+  }, [products]);
+
+  const handleDeleteProduct = (id) => {
+    if (confirm("Are you sure you want to delete this product?")) {
+      setProducts(products.filter(p => p.id !== id));
+    }
+  };
+
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState("All");
   const [sort, setSort] = useState("impact");
   const [wishlist, setWishlist] = useState([]);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    brand: "",
+    category: "Home Energy",
+    price: "",
+    co2SavedKg: "",
+    image: "",
+    whyBetter: "",
+    link: ""
+  });
+
+  const handleAddProduct = () => {
+    if (!newProduct.name || !newProduct.price) return;
+    const p = {
+      ...newProduct,
+      id: "p" + (products.length + 1) + Date.now(), // unique ID
+      rating: 0,
+      aqiImpact: "Low", // Default
+      badges: ["New"],
+      co2SavedKg: Number(newProduct.co2SavedKg) || 0,
+      price: Number(newProduct.price)
+    };
+    setProducts([p, ...products]);
+    setIsAddOpen(false);
+    setNewProduct({
+      name: "",
+      brand: "",
+      category: "Home Energy",
+      price: "",
+      co2SavedKg: "",
+      image: "",
+      whyBetter: "",
+      link: ""
+    });
+  };
 
   const list = useMemo(() => {
-    let items = PRODUCTS.filter(
+    let items = products.filter(
       (x) => (cat === "All" || x.category === cat) && x.name.toLowerCase().includes(query.toLowerCase())
     );
 
@@ -180,7 +324,7 @@ const EcoProducts = () => {
     if (sort === "rating") items = items.sort((a, b) => b.rating - a.rating);
 
     return items;
-  }, [query, cat, sort]);
+  }, [query, cat, sort, products]);
 
   const addWishlist = (p) => {
     if (!wishlist.find((w) => w.id === p.id)) setWishlist([...wishlist, p]);
@@ -205,6 +349,64 @@ const EcoProducts = () => {
               </p>
             </div>
 
+            <div className="flex flex-col gap-3 md:flex-row md:items-center w-full md:w-auto">
+               <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-green-500 hover:bg-green-600 text-black font-semibold shrink-0">
+                    <Plus className="w-4 h-4 mr-2"/> Add Product
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-[#0b1411] border-green-500/20 text-green-100">
+                  <DialogHeader>
+                    <DialogTitle>Add New Eco Product</DialogTitle>
+                    <DialogDescription>Share a sustainable product with the community.</DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Name</Label>
+                        <Input value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} className="bg-black/20 border-green-500/20"/>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Brand</Label>
+                        <Input value={newProduct.brand} onChange={e => setNewProduct({...newProduct, brand: e.target.value})} className="bg-black/20 border-green-500/20"/>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Price (₹)</Label>
+                        <Input type="number" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} className="bg-black/20 border-green-500/20"/>
+                      </div>
+                      <div className="space-y-2">
+                         <Label>Category</Label>
+                         <select 
+                            value={newProduct.category} 
+                            onChange={e => setNewProduct({...newProduct, category: e.target.value})}
+                            className="w-full flex h-10 items-center justify-between rounded-md border border-green-500/20 bg-black/20 px-3 py-2 text-sm text-green-100 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                         </select>
+                      </div>
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Image URL</Label>
+                        <Input value={newProduct.image} onChange={e => setNewProduct({...newProduct, image: e.target.value})} className="bg-black/20 border-green-500/20" placeholder="https://..."/>
+                      </div>
+                       <div className="space-y-2">
+                        <Label>Buy Link</Label>
+                        <Input value={newProduct.link} onChange={e => setNewProduct({...newProduct, link: e.target.value})} className="bg-black/20 border-green-500/20" placeholder="https://..."/>
+                      </div>
+                       <div className="space-y-2">
+                        <Label>Why fits better?</Label>
+                        <Input value={newProduct.whyBetter} onChange={e => setNewProduct({...newProduct, whyBetter: e.target.value})} className="bg-black/20 border-green-500/20"/>
+                      </div>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={handleAddProduct} className="bg-green-500 text-black hover:bg-green-600">Save Product</Button>
+                  </DialogFooter>
+                </DialogContent>
+               </Dialog>
+
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 w-full md:w-auto">
               <div className="col-span-2 md:col-span-2">
                 <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search eco products..." className="bg-[#0b1411] border-green-500/20 text-green-100"/>
@@ -221,6 +423,7 @@ const EcoProducts = () => {
                 <option value="rating">Sort: Rating</option>
               </select>
             </div>
+           </div>
           </div>
 
 
@@ -235,10 +438,10 @@ const EcoProducts = () => {
         </div>
 
 
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-5">
           {list.map((p) => (
             <div key={p.id} className="group">
-              <ProductCard p={p} onAdd={addWishlist} />
+              <ProductCard p={p} onAdd={addWishlist} onDelete={handleDeleteProduct} />
             </div>
           ))}
         </div>

@@ -2,39 +2,31 @@ import axios from "axios";
 
 export const reverseGeocode = async (lat, lon) => {
   try {
-    const url = "https://nominatim.openstreetmap.org/reverse";
+    // 🚀 Using BigDataCloud Free API (Much Faster, No Rate Limit for client-side use style)
+    const url = "https://api.bigdatacloud.net/data/reverse-geocode-client";
 
     const res = await axios.get(url, {
       params: {
-        lat,
-        lon,
-        format: "json",
-        zoom: 14,
-        addressdetails: 1,
+        latitude: lat,
+        longitude: lon,
+        localityLanguage: "en",
       },
-      headers: {
-        // 🔴 REQUIRED by OpenStreetMap
-        "User-Agent": "EcoSense/1.0 (contact@ecosense.app)",
-      },
-      timeout: 8000,
+      timeout: 10000, // 10s is enough for this fast API
     });
 
-    const address = res.data?.address;
-    if (!address) return "Along Route";
+    const data = res.data;
+    if (!data) return "Along Route";
 
-    // 🔥 SMART FALLBACK ORDER (IMPORTANT)
+    // 🔥 SMART FALLBACK for BigDataCloud
     return (
-      address.neighbourhood ||
-      address.suburb ||
-      address.road ||
-      address.village ||
-      address.town ||
-      address.city ||
-      address.county ||
-      address.state ||
+      data.locality ||
+      data.city ||
+      data.principalSubdivision ||
+      data.countryName ||
       "Along Route"
     );
   } catch (err) {
+    console.error("Reverse Geocode Error:", err.message);
     return "Along Route";
   }
 };

@@ -4,10 +4,10 @@ import { geocodeCity } from "../utils/geocodeCity.js";
 import { getAQIByCoords } from "../utils/getAQI.js";
 import { reverseGeocode } from "../utils/reverseGeocode.js";
 
-/* 🔹 Sampling density */
+/* 🔹 Sampling density (Reduced to avoid Timeouts) */
 const getSamplingStep = (distanceKm) => {
-  if (distanceKm > 50) return 80;
-  return 25;
+  if (distanceKm > 50) return 120; // Was 80
+  return 40; // Was 25
 };
 
 /* 🔹 Sample route points */
@@ -81,6 +81,8 @@ export const routeController = async (req, res) => {
       const sampledPoints = sampleRoutePoints(geometry, step);
 
       /* 🌫️ AQI + 📍 AREA (FIXED) */
+      /* 🌫️ AQI + 📍 AREA (FIXED) */
+      /* 🌫️ AQI + 📍 AREA (FIXED) */
       const pollutionSegments = await Promise.all(
         sampledPoints.map(async (p) => {
           /* AQI */
@@ -99,13 +101,14 @@ export const routeController = async (req, res) => {
 
           /* 📍 AREA — ALWAYS TRY */
           let area = "Along Route";
-          const revKey = `rev:${p.lat},${p.lon}`;
+          const revKey = `rev_v3:${p.lat},${p.lon}`; // New key v3
           const cachedArea = aqiCache.get(revKey);
 
           if (cachedArea) {
             area = cachedArea;
           } else {
             try {
+              // No sleep needed for BigDataCloud
               area = await reverseGeocode(p.lat, p.lon);
               aqiCache.set(revKey, area);
             } catch {
