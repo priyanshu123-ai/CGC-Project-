@@ -6,6 +6,116 @@ const groq = new Groq({
   timeout: 15000,
 });
 
+const calculateScore = (answers) => {
+  let score = 900;
+
+  // ⚡ Electricity (0–1000 kWh)
+  if (answers.electricity > 800) score -= 150;
+  else if (answers.electricity > 500) score -= 100;
+  else if (answers.electricity > 300) score -= 50;
+
+  // 🚗 Transport
+  switch (answers.transport) {
+    case "personal":
+      score -= 180;
+      break;
+    case "carpool":
+      score -= 100;
+      break;
+    case "public":
+      score -= 60;
+      break;
+    case "bike":
+      score -= 20;
+      break;
+    case "electric":
+      score -= 10;
+      break;
+  }
+
+  // 📏 Daily distance
+  if (answers.distance > 50) score -= 120;
+  else if (answers.distance > 20) score -= 70;
+  else if (answers.distance > 5) score -= 30;
+
+  // 🛍 Shopping habits
+  switch (answers.shopping) {
+    case "weekly":
+      score -= 100;
+      break;
+    case "monthly":
+      score -= 60;
+      break;
+    case "rarely":
+      score -= 30;
+      break;
+    case "secondhand":
+      score -= 10;
+      break;
+  }
+
+  // 🍽 Diet
+  switch (answers.diet) {
+    case "omnivore":
+      score -= 120;
+      break;
+    case "flexitarian":
+      score -= 70;
+      break;
+    case "vegetarian":
+      score -= 40;
+      break;
+    case "vegan":
+      score -= 10;
+      break;
+  }
+
+  // ♻️ Recycling
+  switch (answers.recycling) {
+    case "never":
+      score -= 120;
+      break;
+    case "sometimes":
+      score -= 70;
+      break;
+    case "mostly":
+      score -= 30;
+      break;
+    case "always":
+      score -= 0;
+      break;
+  }
+
+  // 🏠 Energy-efficient appliances
+  switch (answers.home) {
+    case "none":
+      score -= 100;
+      break;
+    case "some":
+      score -= 60;
+      break;
+    case "most":
+      score -= 30;
+      break;
+    case "all":
+      score -= 0;
+      break;
+  }
+
+  // Clamp score
+  return Math.max(0, Math.min(900, score));
+};
+
+
+
+
+const getImpactLevel = (score) => {
+  if (score <= 300) return "Low Pollution Impact";
+  if (score <= 600) return "Moderate Pollution Impact";
+  return "High Pollution Impact";
+};
+
+
 // helper to clean ```json blocks
 const cleanJSON = (text) =>
   text.replace(/```json|```/g, "").trim();
@@ -15,23 +125,32 @@ export const ecoScoreController = async (req, res) => {
     const userId = req.userId;
     const { answers } = req.body;
 
+    // ✅ 1. Backend decides score
+    const score = calculateScore(answers);
+
+    // ✅ 2. Backend decides level
+    const level = getImpactLevel(score);
+
+    // ✅ 3. AI ONLY explains
     const prompt = `
 You are an environmental pollution expert.
 
-Analyze pollution using PERSONAL and AREA factors.
+IMPORTANT:
+- Do NOT calculate or change score
+- Do NOT change impact level
 
-User data:
+User pollution score: ${score}
+Impact level: ${level}
+
+User answers:
 ${JSON.stringify(answers, null, 2)}
 
-SCORING RULES:
-- 0–400  = High Pollution Impact
-- 401–700 = Moderate Pollution Impact
-- 701–900 = Low Pollution Impact
+TASK:
+- Explain WHY the user got this level
+- Suggest precautions only
 
 Return ONLY valid JSON:
 {
-  "score": number,
-  "level": string,
   "explanation": string,
   "precautions": {
     "personal": [string, string, string],
@@ -50,13 +169,12 @@ Return ONLY valid JSON:
       cleanJSON(aiRes.choices[0].message.content)
     );
 
-    const score = Math.max(0, Math.min(900, result.score));
-
+    // ✅ 4. Save clean data
     const savedAssessment = await Assessment.create({
       userId,
       answers,
-      score,
-      level: result.level,
+      score,           // ✔️ always number
+      level,           // ✔️ always valid
       aiExplanation: result.explanation,
       precautions: result.precautions,
     });
@@ -69,6 +187,7 @@ Return ONLY valid JSON:
       success: true,
       assessment: populatedAssessment,
     });
+
   } catch (error) {
     console.error("EcoScore Error:", error);
     res.status(500).json({
@@ -77,6 +196,7 @@ Return ONLY valid JSON:
     });
   }
 };
+
 
 export const getLatestAssessment = async (req, res) => {
   try {
