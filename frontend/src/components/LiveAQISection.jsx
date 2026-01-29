@@ -12,8 +12,8 @@ import {
 } from "lucide-react";
 import AQIBadge from "./AQIBadge";
 
-const WAQI_TOKEN = import.meta.env.VITE_WAQI_TOKEN;
 const OPENWEATHER_KEY = import.meta.env.VITE_OPENWEATHER_KEY;
+const WAQI_TOKEN = import.meta.env.VITE_WAQI_TOKEN;
 
 const LiveAQISection = () => {
   const [loading, setLoading] = useState(true);
@@ -36,7 +36,18 @@ const LiveAQISection = () => {
         try {
           const { latitude, longitude } = pos.coords;
 
-          /* ================= REAL AQI (WAQI) ================= */
+          /* ================= CITY (OPENWEATHER GEO) ================= */
+          const geoRes = await fetch(
+            `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${OPENWEATHER_KEY}`
+          );
+          const geoJson = await geoRes.json();
+
+          const city =
+            Array.isArray(geoJson) && geoJson.length > 0
+              ? geoJson[0].name
+              : "Unknown";
+
+          /* ================= AQI (WAQI – REAL VALUE) ================= */
           const waqiRes = await fetch(
             `https://api.waqi.info/feed/geo:${latitude};${longitude}/?token=${WAQI_TOKEN}`
           );
@@ -46,11 +57,6 @@ const LiveAQISection = () => {
             waqiJson.status === "ok" && waqiJson.data?.aqi
               ? waqiJson.data.aqi
               : 150;
-
-          const city =
-            waqiJson.status === "ok"
-              ? waqiJson.data.city.name
-              : "Unknown";
 
           /* ================= WEATHER ================= */
           const weatherRes = await fetch(
