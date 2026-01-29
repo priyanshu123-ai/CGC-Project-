@@ -12,16 +12,8 @@ import {
 } from "lucide-react";
 import AQIBadge from "./AQIBadge";
 
+const WAQI_TOKEN = import.meta.env.VITE_WAQI_TOKEN;
 const OPENWEATHER_KEY = import.meta.env.VITE_OPENWEATHER_KEY;
-
-/* ✅ Correct AQI Mapping */
-const AQI_MAP = {
-  1: 40,
-  2: 80,
-  3: 130,
-  4: 180,
-  5: 250,
-};
 
 const LiveAQISection = () => {
   const [loading, setLoading] = useState(true);
@@ -30,14 +22,11 @@ const LiveAQISection = () => {
 
   /* ================= MASK LOGIC ================= */
   const getMaskRecommendation = (aqi) => {
-    if (aqi <= 50)
-      return { text: "No Mask Needed", color: "green", icon: "😊" };
-    if (aqi <= 100)
-      return { text: "N95 Optional", color: "yellow", icon: "😐" };
-    if (aqi <= 150)
-      return { text: "N95 Recommended", color: "orange", icon: "😷" };
-    if (aqi <= 200) return { text: "N95 Required", color: "red", icon: "😷" };
-    return { text: "N99 / N100 Required", color: "purple", icon: "🤢" };
+    if (aqi <= 50) return { text: "No Mask Needed", icon: "😊" };
+    if (aqi <= 100) return { text: "N95 Optional", icon: "😐" };
+    if (aqi <= 150) return { text: "N95 Recommended", icon: "😷" };
+    if (aqi <= 200) return { text: "N95 Required", icon: "😷" };
+    return { text: "N99 / N100 Required", icon: "🤢" };
   };
 
   /* ================= FETCH LIVE DATA ================= */
@@ -47,22 +36,23 @@ const LiveAQISection = () => {
         try {
           const { latitude, longitude } = pos.coords;
 
-          /* City name */
-          const geoRes = await fetch(
-            `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${OPENWEATHER_KEY}`
+          /* ================= REAL AQI (WAQI) ================= */
+          const waqiRes = await fetch(
+            `https://api.waqi.info/feed/geo:${latitude};${longitude}/?token=${WAQI_TOKEN}`
           );
-          const geo = await geoRes.json();
-          const city = geo?.[0]?.name || "Unknown";
+          const waqiJson = await waqiRes.json();
 
-          /* AQI */
-          const aqiRes = await fetch(
-            `https://api.openweathermap.org/data/2.5/air_pollution?lat=${latitude}&lon=${longitude}&appid=${OPENWEATHER_KEY}`
-          );
-          const aqiJson = await aqiRes.json();
-          const aqiIndex = aqiJson.list[0].main.aqi;
-          const aqi = AQI_MAP[aqiIndex] || 150;
+          const aqi =
+            waqiJson.status === "ok" && waqiJson.data?.aqi
+              ? waqiJson.data.aqi
+              : 150;
 
-          /* Weather */
+          const city =
+            waqiJson.status === "ok"
+              ? waqiJson.data.city.name
+              : "Unknown";
+
+          /* ================= WEATHER ================= */
           const weatherRes = await fetch(
             `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${OPENWEATHER_KEY}`
           );
@@ -126,43 +116,20 @@ const LiveAQISection = () => {
         </div>
 
         {/* GRID */}
-        <div
-          className="
-  grid
-  grid-cols-[repeat(auto-fit,minmax(280px,1fr))]
-  gap-6
-  mb-8
-"
-        >
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-6 mb-8">
           {/* AQI */}
-          <div
-            className="  p-8
-  bg-[rgba(15,25,23,0.7)]
-  border border-[rgba(37,58,52,0.5)]
-  rounded-2xl
-  backdrop-blur-xl
-  text-center
-  animate-fadeInUp"
-          >
+          <div className="p-8 bg-[rgba(15,25,23,0.7)] border border-[rgba(37,58,52,0.5)] rounded-2xl text-center">
             <p className="text-xs uppercase text-gray-400 mb-3">
               Air Quality Index
             </p>
-            <p className="text-6xl font-bold text-orange-400 drop-shadow-[0_0_30px_rgba(249,115,22,0.6)]">
+            <p className="text-6xl font-bold text-orange-400">
               {data.aqi}
             </p>
             <AQIBadge value={data.aqi} size="lg" />
           </div>
 
           {/* MASK */}
-          <div
-            className="  p-8
-  bg-[rgba(15,25,23,0.7)]
-  border border-[rgba(37,58,52,0.5)]
-  rounded-2xl
-  backdrop-blur-xl
-  text-center
-  animate-fadeInUp"
-          >
+          <div className="p-8 bg-[rgba(15,25,23,0.7)] border border-[rgba(37,58,52,0.5)] rounded-2xl">
             <p className="text-xs uppercase text-gray-400 mb-4">
               Mask Recommendation
             </p>
@@ -188,90 +155,30 @@ const LiveAQISection = () => {
           </div>
 
           {/* WEATHER */}
-          <div
-            className="  p-8
-  bg-[rgba(15,25,23,0.7)]
-  border border-[rgba(37,58,52,0.5)]
-  rounded-2xl
-  backdrop-blur-xl
-  text-center
-  animate-fadeInUp"
-          >
-            <p className="text-xs uppercase text-gray-400 mb-4">Weather</p>
-            <Stat
-              icon={<Thermometer />}
-              label="Temperature"
-              value={`${data.temperature}°C`}
-            />
-            <Stat
-              icon={<Droplets />}
-              label="Humidity"
-              value={`${data.humidity}%`}
-            />
-            <Stat
-              icon={<Wind />}
-              label="Wind Speed"
-              value={`${data.windSpeed} km/h`}
-            />
+          <div className="p-8 bg-[rgba(15,25,23,0.7)] border border-[rgba(37,58,52,0.5)] rounded-2xl">
+            <Stat icon={<Thermometer />} label="Temperature" value={`${data.temperature}°C`} />
+            <Stat icon={<Droplets />} label="Humidity" value={`${data.humidity}%`} />
+            <Stat icon={<Wind />} label="Wind Speed" value={`${data.windSpeed} km/h`} />
           </div>
         </div>
 
-     {/* Link to Pollution Sources Page */}
-<Link to="/pollution" className="block no-underline">
-  <div
-    className="
-      group
-      flex items-center justify-between
-      p-6
-      rounded-2xl
-      border border-red-500/20
-      bg-gradient-to-br from-red-500/10 to-orange-500/10
-      cursor-pointer
-      transition-all duration-300 ease-out
-      hover:-translate-y-0.5
-      hover:border-red-500/40
-      hover:shadow-[0_0_40px_rgba(239,68,68,0.25)]
-    "
-  >
-    {/* LEFT CONTENT */}
-    <div className="flex items-center gap-4">
-      {/* ICON */}
-      <div
-        className="
-          w-14 h-14
-          rounded-xl
-          bg-red-500/20
-          flex items-center justify-center
-          transition-transform duration-300
-          group-hover:scale-105
-        "
-      >
-        <Factory className="w-7 h-7 text-red-500" />
-      </div>
-
-      {/* TEXT */}
-      <div>
-        <h3 className="text-lg font-semibold text-[#f0f5f2]">
-          View Pollution Sources & Solutions
-        </h3>
-        <p className="text-sm text-gray-400 mt-1">
-          See which sectors contribute most and learn how to reduce pollution
-        </p>
-      </div>
-    </div>
-
-    {/* RIGHT ARROW */}
-    <ArrowRight
-      className="
-        w-6 h-6
-        text-red-500
-        transition-transform duration-300
-        group-hover:translate-x-1
-      "
-    />
-  </div>
-</Link>
-
+        {/* POLLUTION LINK */}
+        <Link to="/pollution" className="block">
+          <div className="flex items-center justify-between p-6 rounded-2xl border border-red-500/20 bg-red-500/10 hover:shadow-lg">
+            <div className="flex items-center gap-4">
+              <Factory className="w-7 h-7 text-red-500" />
+              <div>
+                <h3 className="text-lg font-semibold text-white">
+                  View Pollution Sources & Solutions
+                </h3>
+                <p className="text-sm text-gray-400">
+                  Learn what causes pollution and how to reduce it
+                </p>
+              </div>
+            </div>
+            <ArrowRight className="text-red-500" />
+          </div>
+        </Link>
       </div>
     </section>
   );
