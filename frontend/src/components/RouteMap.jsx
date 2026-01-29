@@ -11,6 +11,7 @@ import {
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
+/* ===== ICONS ===== */
 const redIcon = new L.Icon({
   iconUrl: "https://maps.gstatic.com/mapfiles/ms2/micons/red-dot.png",
   iconSize: [32, 32],
@@ -21,6 +22,7 @@ const blueIcon = new L.Icon({
   iconSize: [32, 32],
 });
 
+/* ===== HELPERS ===== */
 const getAQIColor = (aqi) => {
   if (aqi === null) return "#9CA3AF";
   if (aqi <= 120) return "#22C55E";
@@ -29,13 +31,17 @@ const getAQIColor = (aqi) => {
   return "#EF4444";
 };
 
+const shouldWarnCloseGlass = (aqi) => {
+  return aqi !== null && aqi >= 150;
+};
+
 const getLabelCount = (distanceKm) => {
   if (distanceKm < 50) return 3;
   if (distanceKm < 150) return 4;
   return 5;
 };
 
-/* Auto-fit map bounds */
+/* ===== AUTO FIT MAP ===== */
 const FitBounds = ({ origin, destination }) => {
   const map = useMap();
 
@@ -44,7 +50,7 @@ const FitBounds = ({ origin, destination }) => {
 
     const bounds = L.latLngBounds(
       [origin.lat, origin.lon],
-      [destination.lat, destination.lon]
+      [destination.lat, destination.lon],
     );
 
     map.fitBounds(bounds, { padding: [30, 30] });
@@ -53,6 +59,7 @@ const FitBounds = ({ origin, destination }) => {
   return null;
 };
 
+/* ===== MAIN MAP ===== */
 const RouteMap = ({ routes, selectedRouteId, origin, destination }) => {
   if (!origin || !destination) return null;
 
@@ -82,26 +89,20 @@ const RouteMap = ({ routes, selectedRouteId, origin, destination }) => {
     >
       <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
 
-      {/* Auto fit full route */}
       <FitBounds origin={origin} destination={destination} />
 
       {/* Origin */}
       <Marker position={originPos} icon={redIcon}>
         <Popup>
-          <div className="bg-[#0f1912] text-white p-2 rounded-lg">
-            <strong className="text-emerald-500">Origin:</strong>{" "}
-            {origin.name}
-          </div>
+          <strong className="text-emerald-500">Origin:</strong> {origin.name}
         </Popup>
       </Marker>
 
       {/* Destination */}
       <Marker position={destPos} icon={blueIcon}>
         <Popup>
-          <div className="bg-[#0f1912] text-white p-2 rounded-lg">
-            <strong className="text-blue-500">Destination:</strong>{" "}
-            {destination.name}
-          </div>
+          <strong className="text-blue-500">Destination:</strong>{" "}
+          {destination.name}
         </Popup>
       </Marker>
 
@@ -113,51 +114,85 @@ const RouteMap = ({ routes, selectedRouteId, origin, destination }) => {
             if (i === route.pollutionSegments.length - 1) return null;
 
             const segColor = getAQIColor(seg.aqi);
+            const showWarning = shouldWarnCloseGlass(seg.aqi);
 
             return (
-              <Polyline
-                key={`${route.id}-seg-${i}`}
-                positions={[
-                  [seg.lat, seg.lon],
-                  [
-                    route.pollutionSegments[i + 1].lat,
-                    route.pollutionSegments[i + 1].lon,
-                  ],
-                ]}
-                pathOptions={{
-                  color: segColor,
-                  weight: seg.aqi <= 120 ? 9 : 6,
-                  opacity: 1,
-                }}
-              >
-                {labelIndexes.has(i) && (
-                  <Tooltip direction="top" offset={[0, -6]} permanent opacity={1}>
-                    <div
-                      style={{
-                        background: "rgba(10, 31, 21, 0.95)",
-                        color: "#ffffff",
-                        padding: "8px 12px",
-                        borderRadius: "8px",
-                        border: `2px solid ${segColor}`,
-                        boxShadow: `0 4px 20px ${segColor}40`,
-                      }}
+              <>
+                {/* 🔥 AQI SEGMENT */}
+                <Polyline
+                  key={`${route.id}-seg-${i}`}
+                  positions={[
+                    [seg.lat, seg.lon],
+                    [
+                      route.pollutionSegments[i + 1].lat,
+                      route.pollutionSegments[i + 1].lon,
+                    ],
+                  ]}
+                  pathOptions={{
+                    color: segColor,
+                    weight: seg.aqi <= 120 ? 9 : 6,
+                    opacity: 1,
+                  }}
+                >
+                  {labelIndexes.has(i) && (
+                    <Tooltip
+                      permanent
+                      direction="top"
+                      opacity={1}
+                      className="leaflet-tooltip-custom"
                     >
-                      <strong className="block mb-1 text-emerald-500">
-                        {seg.zone}
-                      </strong>
-                      <span style={{ color: segColor, fontWeight: 600 }}>
-                        AQI: {seg.aqi ?? "N/A"}
-                      </span>
-                    </div>
-                  </Tooltip>
+                      <div
+                        style={{
+                          background: "rgba(10,31,21,0.95)",
+                          color: "#ffffff", // ✅ FIX
+                          padding: "8px 12px",
+                          borderRadius: "8px",
+                          border: `2px solid ${segColor}`,
+                          boxShadow: `0 4px 20px ${segColor}40`,
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          zIndex: 9999, // ✅ FIX
+                        }}
+                      >
+                        <div style={{ color: segColor }}>
+                          {seg.zone || "Unknown"}
+                        </div>
+                        <div>AQI: {seg.aqi ?? "N/A"}</div>
+                      </div>
+                    </Tooltip>
+                  )}
+                </Polyline>
+
+                {/* 🚗⚠️ POLLUTION WARNING */}
+                {showWarning && (
+                  <Marker
+                    position={[seg.lat, seg.lon]}
+                    icon={L.divIcon({
+                      className: "",
+                      html: "🚗⚠️",
+                      iconSize: [24, 24],
+                    })}
+                  >
+                    <Popup>
+                      <div className="text-sm font-medium text-red-500">
+                        🚨 High Pollution Area
+                        <br />
+                        <span className="text-white">
+                          Please close car windows
+                        </span>
+                        <br />
+                        AQI: {seg.aqi}
+                      </div>
+                    </Popup>
+                  </Marker>
                 )}
-              </Polyline>
+              </>
             );
           });
         }
 
-        const positions =
-          route.geometry?.map((p) => [p.lat, p.lon]) || [];
+        /* Non-selected routes */
+        const positions = route.geometry?.map((p) => [p.lat, p.lon]) || [];
 
         return (
           <Polyline

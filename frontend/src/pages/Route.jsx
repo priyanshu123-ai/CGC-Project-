@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import Navbar from "@/components/Navbar";
 import RouteMap from "@/components/RouteMap";
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { serverUrl } from "@/main";
 import { getCachedRoute, setCachedRoute } from "@/utils/routeCache";
+import { toast } from "react-toastify";
 
 /* AQI color helper */
 const getAQIColor = (aqi) => {
@@ -28,6 +29,18 @@ const getAQIColor = (aqi) => {
   return "#991B1B";
 };
 
+const speak = (text) => {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const msg = new SpeechSynthesisUtterance(text);
+  msg.lang = "en-IN";
+  msg.rate = 0.95;
+  window.speechSynthesis.speak(msg);
+};
+
+
+
+
 const Routes = () => {
   const [origin, setOrigin] = useState("Delhi");
   const [destination, setDestination] = useState("");
@@ -36,6 +49,38 @@ const Routes = () => {
   const [originCoords, setOriginCoords] = useState(null);
   const [destinationCoords, setDestinationCoords] = useState(null);
   const [loading, setLoading] = useState(false);
+
+   const lastAlertRef = useRef(null);
+  const voiceEnabledRef = useRef(true);
+
+  useEffect(() => {
+  if (!routes.length) return;
+
+  const segments = routes[selectedRoute]?.pollutionSegments;
+  if (!segments || segments.length === 0) return;
+
+  const high = segments.find((s) => s.aqi >= 150);
+  if (!high) return;
+
+  // prevent repeat alerts
+  if (lastAlertRef.current === high.zone) return;
+  lastAlertRef.current = high.zone;
+
+  const message =
+    high.aqi >= 200
+      ? "Severe pollution ahead. Close car windows, turn on air recirculation, and avoid exposure."
+      : "High pollution detected ahead. Please wear a mask and keep vehicle windows closed.";
+
+  toast.warn(message, {
+    position: "top-center",
+    autoClose: 8000,
+    pauseOnHover: true,
+  });
+
+  if (voiceEnabledRef.current) {
+    speak(message);
+  }
+}, [routes, selectedRoute]);
 
   const handleSearch = async () => {
     if (!destination) return;
@@ -52,6 +97,8 @@ const Routes = () => {
         setDestinationCoords(cached.destination);
         return;
       }
+
+      
 
       /* 2️⃣ Call backend */
       const res = await axios.post(`${serverUrl}/api/v2/routes`, {
@@ -71,7 +118,14 @@ const Routes = () => {
     } finally {
       setLoading(false);
     }
+
   };
+
+  window.stopPollutionVoice = () => {
+  window.speechSynthesis.cancel();
+  voiceEnabledRef.current = false;
+};
+
 
   return (
     <div className="min-h-screen" style={{ background: "#0a0f0d" }}>

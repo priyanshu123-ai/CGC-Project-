@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import {
   Database,
@@ -31,8 +31,11 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { serverUrl } from "@/main";
 
+
+
 const Navbar = () => {
   const location = useLocation();
+  
 
 
   const isActive = (path) => location.pathname === path;
@@ -49,6 +52,9 @@ const Navbar = () => {
 
 
   };
+
+ 
+
 
  
 
