@@ -4,6 +4,7 @@ import Home from './pages/Home'
 import Register from './pages/Register'
 import Login from './pages/Login'
 import Routeing from "./pages/Route";
+import EcoBot from './pages/EcoBot'
 
 const App = () => {
   return (
@@ -13,6 +14,7 @@ const App = () => {
       <Route path='/register' element = {<Register />}/>
       <Route path='/login' element={<Login />}/>
       <Route path='/routes' element = {<Routeing />}/>
+         <Route path="/chat" element={<EcoBot />} />
 
     </Routes>
   )
